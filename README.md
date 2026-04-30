@@ -150,7 +150,7 @@ robot_arm_6dof/
 
 ```bash
 # 1. Clone and install
-git clone https://github.com/yourname/robot-arm-6dof
+git clone https://github.com/jams286/robot-arm-6dof
 cd robot-arm-6dof
 pip install -r requirements.txt
 
