@@ -291,6 +291,6 @@ MIT — free for personal and commercial use. Attribution appreciated.
 
 ## 🤖 AI Acknowledgment
 
-Este proyecto fue desarrollado con la asistencia de **Claude** (Anthropic). La IA ayudó en el diseño de la arquitectura, implementación del código, creación de tests y documentación. Toda la lógica fue revisada y validada por el autor para asegurar su correctitud.
+This project was developed with the assistance of **Claude** (Anthropic). The AI helped with architecture design, code implementation, test creation, and documentation. All logic was reviewed and validated by the author to ensure correctness.
 
-> Creo en la transparencia sobre el uso de herramientas de IA en el desarrollo de software.
+> I believe in transparency about the use of AI tools in software development.
