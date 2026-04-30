@@ -18,12 +18,13 @@ Features
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
-from matplotlib.widgets import Slider, Button, CheckButtons
+from matplotlib.widgets import Slider, Button, CheckButtons, TextBox
 from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from typing import Optional, List
 
 from .config import VIZ_CONFIG
+from .trajectory import multi_segment_trajectory
 
 
 # ------------------------------------------------------------------
@@ -86,6 +87,7 @@ class RobotVisualizer:
         self.cfg     = VIZ_CONFIG
         self._traj   : Optional[np.ndarray] = None
         self._target : Optional[np.ndarray] = None
+        self._waypoints: List[np.ndarray] = []
         # Toggle states
         self._show_frames  = True
         self._show_axes    = True
@@ -105,13 +107,24 @@ class RobotVisualizer:
         self.ax3d.set_facecolor("#16213e")
         self.ax3d.set_box_aspect([1, 1, 1])
 
-        # --- Info panel (right 40 %) ---
-        self.ax_info = self.fig.add_axes([0.60, 0.50, 0.38, 0.46])
+        # --- Info panel (right side) ---
+        self.ax_info = self.fig.add_axes([0.60, 0.55, 0.38, 0.41])
         self.ax_info.set_facecolor("#0f3460")
         self.ax_info.axis("off")
 
+        # --- Check-buttons for toggles (below info panel) ---
+        ax_chk = self.fig.add_axes([0.60, 0.45, 0.12, 0.09],
+                                   facecolor="#c8d0e0")
+        self.chk = CheckButtons(ax_chk,
+                                ["Frames", "Rot Axes", "Shadow"],
+                                [True, True, True])
+        for label in self.chk.labels:
+            label.set_fontsize(7)
+            label.set_color("#1a1a2e")
+        self.chk.on_clicked(self._on_toggle)
+
         # --- Manipulability bar ---
-        self.ax_man = self.fig.add_axes([0.60, 0.38, 0.38, 0.06])
+        self.ax_man = self.fig.add_axes([0.74, 0.45, 0.24, 0.06])
 
         # --- Joint sliders ---
         self.sliders: List[Slider] = []
@@ -142,20 +155,35 @@ class RobotVisualizer:
         self.btn_rand = Button(ax_rand, "Random", color="#0f3460", hovercolor="#1a5276")
         self.btn_rand.on_clicked(self._on_random)
 
-        ax_traj = self.fig.add_axes([0.78, 0.04, 0.10, 0.04])
+        ax_save = self.fig.add_axes([0.78, 0.04, 0.06, 0.04])
+        self.btn_save = Button(ax_save, "+ Pt", color="#27ae60", hovercolor="#2ecc71")
+        self.btn_save.on_clicked(self._on_save_waypoint)
+
+        ax_clear = self.fig.add_axes([0.845, 0.04, 0.06, 0.04])
+        self.btn_clear = Button(ax_clear, "Clear", color="#c0392b", hovercolor="#e74c3c")
+        self.btn_clear.on_clicked(self._on_clear_waypoints)
+
+        ax_traj = self.fig.add_axes([0.91, 0.04, 0.07, 0.04])
         self.btn_traj = Button(ax_traj, "\u25b6 Traj", color="#e94560", hovercolor="#ff6b6b")
         self.btn_traj.on_clicked(self._on_play_trajectory)
 
-        # --- Check-buttons for toggles (right side) ---
-        ax_chk = self.fig.add_axes([0.89, 0.02, 0.10, 0.07],
-                                   facecolor="#c8d0e0")
-        self.chk = CheckButtons(ax_chk,
-                                ["Frames", "Rot Axes", "Shadow"],
-                                [True, True, True])
-        for label in self.chk.labels:
-            label.set_fontsize(7)
-            label.set_color("#1a1a2e")
-        self.chk.on_clicked(self._on_toggle)
+        # --- IK target input ---
+        ax_ik_label = self.fig.add_axes([0.62, 0.13, 0.06, 0.025])
+        ax_ik_label.axis("off")
+        ax_ik_label.text(0.5, 0.5, "XYZ:", ha="center", va="center",
+                         fontsize=9, color="white", fontweight="bold")
+        ax_ik_text = self.fig.add_axes([0.68, 0.13, 0.20, 0.025])
+        self.txt_ik = TextBox(ax_ik_text, "", initial="0.3, 0.0, 0.5")
+        ax_ik_go = self.fig.add_axes([0.89, 0.13, 0.09, 0.025])
+        self.btn_ik = Button(ax_ik_go, "IK Go", color="#1abc9c", hovercolor="#2ecc71")
+        self.btn_ik.on_clicked(self._on_ik_go)
+
+        # --- Speed slider ---
+        ax_speed = self.fig.add_axes([0.62, 0.09, 0.36, 0.02])
+        self.slider_speed = Slider(
+            ax_speed, "Speed", 0.5, 5.0, valinit=1.0,
+            color="#e94560", valstep=0.5,
+        )
 
         # --- Camera view buttons (below 3D viewport) ---
         view_defs = [
@@ -445,15 +473,61 @@ class RobotVisualizer:
         for i, sl in enumerate(self.sliders):
             sl.set_val(np.degrees(self.robot.q[i]))
 
-    def _on_play_trajectory(self, _):
-        if self._traj is None:
-            print("[Visualizer] No trajectory loaded. Call set_trajectory() first.")
+    def _on_ik_go(self, _):
+        txt = self.txt_ik.text.strip()
+        try:
+            coords = [float(v) for v in txt.replace(",", " ").split()]
+            if len(coords) != 3:
+                raise ValueError
+            target = np.array(coords)
+        except ValueError:
+            print("[Visualizer] Invalid input. Enter 3 numbers: x, y, z")
             return
+        result = self.robot.ik_position_only(target, method="dls")
+        if result.success:
+            self.robot.q = result.joint_angles
+            for i, sl in enumerate(self.sliders):
+                sl.set_val(np.degrees(result.joint_angles[i]))
+            self._target = self.robot.fk(result.joint_angles)
+            print(f"[Visualizer] IK solved! Error: {result.pos_error:.6f} m")
+        else:
+            print(f"[Visualizer] IK failed. Position may be unreachable. "
+                  f"Error: {result.pos_error:.4f} m")
+            self._target = None
+        self._draw()
+
+    def _on_save_waypoint(self, _):
+        self._waypoints.append(self.robot.q.copy())
+        print(f"[Visualizer] Waypoint {len(self._waypoints)} saved: "
+              f"{np.degrees(self.robot.q).round(1)} deg")
+
+    def _on_clear_waypoints(self, _):
+        self._waypoints.clear()
+        self._traj = None
+        print("[Visualizer] Waypoints and trajectory cleared.")
+        self._draw()
+
+    def _on_play_trajectory(self, _):
+        if self._traj is None and len(self._waypoints) >= 2:
+            self._traj = multi_segment_trajectory(self._waypoints,
+                                                  n_steps=30, smooth=True)
+            print(f"[Visualizer] Built trajectory from {len(self._waypoints)} waypoints.")
+        if self._traj is None:
+            print("[Visualizer] No trajectory. Save at least 2 waypoints with '+ Pt' first.")
+            return
+        # Disconnect slider callbacks to avoid 6 redraws per frame
+        for sl in self.sliders:
+            sl.disconnect_events()
         for q_i in self._traj:
             self.robot.q = q_i
             for i, sl in enumerate(self.sliders):
                 sl.set_val(np.degrees(q_i[i]))
-            plt.pause(0.03)
+            self._draw()
+            self.fig.canvas.flush_events()
+            plt.pause(0.005 / self.slider_speed.val)
+        # Reconnect slider callbacks
+        for sl in self.sliders:
+            sl.on_changed(self._on_slider_change)
 
     # ------------------------------------------------------------------
     # Public API
