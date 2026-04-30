@@ -143,8 +143,9 @@ class RobotVisualizer:
                 valinit=np.degrees(self.robot.q[i]),
                 color=slider_colors[i % len(slider_colors)],
             )
-            sl.on_changed(self._on_slider_change)
             self.sliders.append(sl)
+        self._slider_cids = [sl.on_changed(self._on_slider_change)
+                             for sl in self.sliders]
 
         # --- IK target input ---
         ax_ik_label = self.fig.add_axes([0.62, 0.14, 0.06, 0.025])
@@ -484,15 +485,15 @@ class RobotVisualizer:
             print("[Visualizer] Invalid input. Enter 3 numbers: x, y, z")
             return
         result = self.robot.ik_position_only(target, method="dls")
-        if result.success:
+        if result.pos_error < 0.01:
             self.robot.q = result.joint_angles
             for i, sl in enumerate(self.sliders):
                 sl.set_val(np.degrees(result.joint_angles[i]))
             self._target = self.robot.fk(result.joint_angles)
-            print(f"[Visualizer] IK solved! Error: {result.pos_error:.6f} m")
+            print(f"[Visualizer] IK solved! Error: {result.pos_error*1000:.2f} mm")
         else:
             print(f"[Visualizer] IK failed. Position may be unreachable. "
-                  f"Error: {result.pos_error:.4f} m")
+                  f"Error: {result.pos_error*1000:.2f} mm")
             self._target = None
         self._draw()
 
@@ -515,19 +516,27 @@ class RobotVisualizer:
         if self._traj is None:
             print("[Visualizer] No trajectory. Save at least 2 waypoints with '+ Pt' first.")
             return
-        # Disconnect slider callbacks to avoid 6 redraws per frame
-        for sl in self.sliders:
-            sl.disconnect_events()
-        for q_i in self._traj:
+        # Disconnect our on_changed callbacks to avoid 6 redraws per frame
+        for sl, cid in zip(self.sliders, self._slider_cids):
+            sl.disconnect(cid)
+        speed = max(self.slider_speed.val, 0.5)
+        step = max(1, int(speed))
+        for idx in range(0, len(self._traj), step):
+            q_i = self._traj[idx]
             self.robot.q = q_i
             for i, sl in enumerate(self.sliders):
                 sl.set_val(np.degrees(q_i[i]))
             self._draw()
             self.fig.canvas.flush_events()
-            plt.pause(0.005 / self.slider_speed.val)
-        # Reconnect slider callbacks
-        for sl in self.sliders:
-            sl.on_changed(self._on_slider_change)
+            plt.pause(0.001)
+        # Ensure final pose is applied
+        self.robot.q = self._traj[-1]
+        for i, sl in enumerate(self.sliders):
+            sl.set_val(np.degrees(self._traj[-1][i]))
+        self._draw()
+        # Reconnect our on_changed callbacks
+        self._slider_cids = [sl.on_changed(self._on_slider_change)
+                             for sl in self.sliders]
 
     # ------------------------------------------------------------------
     # Public API
