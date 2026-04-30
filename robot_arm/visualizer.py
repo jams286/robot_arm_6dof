@@ -69,7 +69,7 @@ class RobotVisualizer:
         ]
         for i in range(self.robot.n_joints):
             lo, hi = self.robot.joint_limits[i]
-            ax_s = self.fig.add_axes([0.62, 0.28 - i * 0.045, 0.35, 0.025])
+            ax_s = self.fig.add_axes([0.62, 0.32 - i * 0.04, 0.35, 0.025])
             sl = Slider(
                 ax_s,
                 f"J{i+1}",
@@ -91,7 +91,7 @@ class RobotVisualizer:
         self.btn_rand.on_clicked(self._on_random)
 
         ax_traj = self.fig.add_axes([0.86, 0.04, 0.12, 0.04])
-        self.btn_traj = Button(ax_traj, "▶ Traj", color="#e94560", hovercolor="#ff6b6b")
+        self.btn_traj = Button(ax_traj, "▶ Trajectory", color="#e94560", hovercolor="#ff6b6b")
         self.btn_traj.on_clicked(self._on_play_trajectory)
 
         self._draw()

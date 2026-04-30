@@ -13,6 +13,9 @@ Usage
 """
 
 import argparse
+import os
+import tempfile
+
 import numpy as np
 import matplotlib
 matplotlib.use("Agg")            # headless rendering
@@ -104,7 +107,7 @@ def demo_ik():
 
     # Save convergence plot
     fig = plot_ik_convergence(results, "IK Solver Comparison")
-    path = "/tmp/ik_convergence.png"
+    path = os.path.join(tempfile.gettempdir(), "ik_convergence.png")
     fig.savefig(path, dpi=120, bbox_inches="tight")
     print(f"\n  Plot saved → {path}")
 
@@ -149,7 +152,7 @@ def demo_trajectory():
     ax.set_title("End-Effector Trajectory (joint-space cubic)")
     ax.legend(loc="upper left", fontsize=8)
 
-    path = "/tmp/trajectory.png"
+    path = os.path.join(tempfile.gettempdir(), "trajectory.png")
     fig.savefig(path, dpi=120, bbox_inches="tight")
     print(f"  Plot saved → {path}")
 
@@ -166,7 +169,7 @@ def demo_trajectory():
         ax.set_xlabel("Normalised time")
     fig2.suptitle("Joint Angles Along Trajectory")
     plt.tight_layout()
-    path2 = "/tmp/joints_trajectory.png"
+    path2 = os.path.join(tempfile.gettempdir(), "joints_trajectory.png")
     fig2.savefig(path2, dpi=120, bbox_inches="tight")
     print(f"  Plot saved → {path2}")
 
