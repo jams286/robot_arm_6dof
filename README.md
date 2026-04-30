@@ -137,8 +137,15 @@ robot_arm_6dof/
 │   └── visualizer.py          # Matplotlib 3D interactive viewer
 ├── tests/
 │   └── test_kinematics.py     # 28 unit tests (pytest)
+├── docs/
+│   ├── robot_ur5_like.png     # UR5-like reference render
+│   ├── robot_ur5_like_multiview.png
+│   ├── robot_puma560.png      # PUMA 560 reference render
+│   ├── robot_simple.png       # Simple arm reference render
+│   └── robot_stanford.png     # Stanford-like reference render
 ├── main.py                    # Interactive visualizer launcher
 ├── demo.py                    # Headless demo (FK, IK, trajectory)
+├── generate_reference.py      # Generate reference images for each preset
 ├── requirements.txt
 ├── setup.py
 └── README.md
@@ -165,7 +172,11 @@ python demo.py --demo ik    # IK solver comparison
 python demo.py --demo traj  # Trajectory planning
 python demo.py --demo all   # All demos
 
-# 4. Run tests
+# 4. Generate reference images
+python generate_reference.py              # All presets
+python generate_reference.py --preset ur5_like  # Single preset
+
+# 5. Run tests
 pytest tests/ -v
 ```
 
@@ -213,6 +224,8 @@ viz.show()
 |--------|-------------|-----------|
 | `ur5_like` | 6-DOF industrial-scale arm | Universal Robots UR5 |
 | `simple` | Unit-length educational arm | Generic textbook arm |
+| `puma560` | Classic industrial arm with spherical wrist | Unimation PUMA 560 |
+| `stanford` | 6-DOF all-revolute approximation | Stanford Arm |
 
 **Custom DH table:**
 ```python
@@ -236,18 +249,32 @@ robot = Robot6DOF(dh_params=custom_dh)
 ## 📊 Test Results
 
 ```
-28 passed in 3.05s
+28 passed
 
 TestDHMatrix          (5 tests)  — identity, shape, det, rotation
 TestForwardKinematics (6 tests)  — NaN, shape, orthonormality, reproducibility
 TestJacobian          (5 tests)  — shape, FD consistency, manipulability
-TestIK               (7 tests)  — convergence, roundtrip, limits, API
+TestIK               (8 tests)  — convergence, roundtrip, limits, API, unreachable targets
 TestRobotClass        (5 tests)  — presets, clipping, random, home
 ```
 
 ---
 
-## 📚 References
+## �️ Reference Images
+
+Generated with `generate_reference.py`. Each image shows the robot with colour-coded links, joint spheres, coordinate frames (RGB = XYZ), rotation-axis arrows, ground grid, shadow projection, and DH parameter annotations.
+
+| UR5-like | PUMA 560 |
+|:---:|:---:|
+| ![UR5-like](docs/robot_ur5_like.png) | ![PUMA 560](docs/robot_puma560.png) |
+
+| Simple | Stanford-like |
+|:---:|:---:|
+| ![Simple](docs/robot_simple.png) | ![Stanford](docs/robot_stanford.png) |
+
+---
+
+## �📚 References
 
 1. Siciliano, B. et al. *Robotics: Modelling, Planning and Control*. Springer, 2010.
 2. Buss, S. R. "Introduction to Inverse Kinematics with Jacobian Transpose, Pseudoinverse and Damped Least Squares." *Technical Report*, UCSD, 2004.
@@ -259,3 +286,11 @@ TestRobotClass        (5 tests)  — presets, clipping, random, home
 ## 📄 License
 
 MIT — free for personal and commercial use. Attribution appreciated.
+
+---
+
+## 🤖 AI Acknowledgment
+
+Este proyecto fue desarrollado con la asistencia de **Claude** (Anthropic). La IA ayudó en el diseño de la arquitectura, implementación del código, creación de tests y documentación. Toda la lógica fue revisada y validada por el autor para asegurar su correctitud.
+
+> Creo en la transparencia sobre el uso de herramientas de IA en el desarrollo de software.
