@@ -108,12 +108,12 @@ class RobotVisualizer:
         self.ax3d.set_box_aspect([1, 1, 1])
 
         # --- Info panel (right side) ---
-        self.ax_info = self.fig.add_axes([0.60, 0.55, 0.38, 0.41])
+        self.ax_info = self.fig.add_axes([0.60, 0.62, 0.38, 0.34])
         self.ax_info.set_facecolor("#0f3460")
         self.ax_info.axis("off")
 
         # --- Check-buttons for toggles (below info panel) ---
-        ax_chk = self.fig.add_axes([0.60, 0.45, 0.12, 0.09],
+        ax_chk = self.fig.add_axes([0.60, 0.52, 0.12, 0.09],
                                    facecolor="#c8d0e0")
         self.chk = CheckButtons(ax_chk,
                                 ["Frames", "Rot Axes", "Shadow"],
@@ -124,7 +124,7 @@ class RobotVisualizer:
         self.chk.on_clicked(self._on_toggle)
 
         # --- Manipulability bar ---
-        self.ax_man = self.fig.add_axes([0.74, 0.45, 0.24, 0.06])
+        self.ax_man = self.fig.add_axes([0.74, 0.53, 0.24, 0.06])
 
         # --- Joint sliders ---
         self.sliders: List[Slider] = []
@@ -134,7 +134,7 @@ class RobotVisualizer:
         ]
         for i in range(self.robot.n_joints):
             lo, hi = self.robot.joint_limits[i]
-            ax_s = self.fig.add_axes([0.62, 0.34 - i * 0.04, 0.35, 0.025])
+            ax_s = self.fig.add_axes([0.62, 0.44 - i * 0.05, 0.35, 0.025])
             sl = Slider(
                 ax_s,
                 f"J{i+1}",
@@ -145,6 +145,24 @@ class RobotVisualizer:
             )
             sl.on_changed(self._on_slider_change)
             self.sliders.append(sl)
+
+        # --- IK target input ---
+        ax_ik_label = self.fig.add_axes([0.62, 0.14, 0.06, 0.025])
+        ax_ik_label.axis("off")
+        ax_ik_label.text(0.5, 0.5, "XYZ:", ha="center", va="center",
+                         fontsize=9, color="white", fontweight="bold")
+        ax_ik_text = self.fig.add_axes([0.68, 0.14, 0.20, 0.025])
+        self.txt_ik = TextBox(ax_ik_text, "", initial="0.3, 0.0, 0.5")
+        ax_ik_go = self.fig.add_axes([0.89, 0.14, 0.09, 0.025])
+        self.btn_ik = Button(ax_ik_go, "IK Go", color="#1abc9c", hovercolor="#2ecc71")
+        self.btn_ik.on_clicked(self._on_ik_go)
+
+        # --- Speed slider ---
+        ax_speed = self.fig.add_axes([0.62, 0.10, 0.36, 0.02])
+        self.slider_speed = Slider(
+            ax_speed, "Speed", 0.5, 5.0, valinit=1.0,
+            color="#e94560", valstep=0.5,
+        )
 
         # --- Buttons ---
         ax_home = self.fig.add_axes([0.62, 0.04, 0.07, 0.04])
@@ -166,24 +184,6 @@ class RobotVisualizer:
         ax_traj = self.fig.add_axes([0.91, 0.04, 0.07, 0.04])
         self.btn_traj = Button(ax_traj, "\u25b6 Traj", color="#e94560", hovercolor="#ff6b6b")
         self.btn_traj.on_clicked(self._on_play_trajectory)
-
-        # --- IK target input ---
-        ax_ik_label = self.fig.add_axes([0.62, 0.13, 0.06, 0.025])
-        ax_ik_label.axis("off")
-        ax_ik_label.text(0.5, 0.5, "XYZ:", ha="center", va="center",
-                         fontsize=9, color="white", fontweight="bold")
-        ax_ik_text = self.fig.add_axes([0.68, 0.13, 0.20, 0.025])
-        self.txt_ik = TextBox(ax_ik_text, "", initial="0.3, 0.0, 0.5")
-        ax_ik_go = self.fig.add_axes([0.89, 0.13, 0.09, 0.025])
-        self.btn_ik = Button(ax_ik_go, "IK Go", color="#1abc9c", hovercolor="#2ecc71")
-        self.btn_ik.on_clicked(self._on_ik_go)
-
-        # --- Speed slider ---
-        ax_speed = self.fig.add_axes([0.62, 0.09, 0.36, 0.02])
-        self.slider_speed = Slider(
-            ax_speed, "Speed", 0.5, 5.0, valinit=1.0,
-            color="#e94560", valstep=0.5,
-        )
 
         # --- Camera view buttons (below 3D viewport) ---
         view_defs = [
