@@ -18,7 +18,7 @@ from robot_arm import Robot6DOF, RobotVisualizer
 def parse_args():
     p = argparse.ArgumentParser(description="6-DOF Robot Arm Interactive Simulator")
     p.add_argument("--preset", default="ur5_like",
-                   choices=["ur5_like", "simple"],
+                   choices=["ur5_like", "simple", "puma560", "stanford"],
                    help="DH parameter preset")
     p.add_argument("--q", nargs=6, type=float, default=None,
                    metavar=("J1","J2","J3","J4","J5","J6"),
