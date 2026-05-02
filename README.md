@@ -1,5 +1,10 @@
 # 🤖 Robot Arm 6-DOF Simulator
 
+![Python](https://img.shields.io/badge/Python-3.8%2B-blue?logo=python&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-green)
+![NumPy](https://img.shields.io/badge/NumPy-2.4-013243?logo=numpy)
+![Matplotlib](https://img.shields.io/badge/Matplotlib-3.10-11557c)
+
 A fully modular Python simulator for a 6-DOF revolute serial manipulator, featuring:
 
 - **Forward Kinematics** via Denavit-Hartenberg convention  
